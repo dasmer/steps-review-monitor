@@ -2,7 +2,7 @@ name: Check Steps App Reviews
 
 on:
   schedule:
-    - cron: "0 * * * *"   # hourly; change to "0 13 * * *" for daily at 13:00 UTC
+    - cron: "*/5 * * * *"
   workflow_dispatch: {}
 
 jobs:
