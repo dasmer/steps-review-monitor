@@ -2,16 +2,21 @@ name: Check Steps App Reviews
 
 on:
   schedule:
-    # hourly (use this first; you can switch to daily later)
-    - cron: "0 * * * *"
+    - cron: "0 * * * *"   # hourly; change to "0 13 * * *" for daily at 13:00 UTC
   workflow_dispatch: {}
 
 jobs:
   check:
     runs-on: ubuntu-latest
     permissions:
-      contents: write    # to commit the updated state file
-      issues: write      # to open an issue notification
+      contents: write
+      issues: write
+
+    env:
+      APP_ID: "1602546738"
+      COUNTRY: "us"
+      STATE_FILE: ".data/review_count.txt"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,11 +24,42 @@ jobs:
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Run check
+      - name: Check review count
         id: check
+        shell: bash
         run: |
-          chmod +x scripts/check_reviews.sh
-          ./scripts/check_reviews.sh
+          set -euo pipefail
+          mkdir -p .data
+
+          json="$(curl -s "https://itunes.apple.com/lookup?id=${APP_ID}&country=${COUNTRY}")"
+          current_count="$(printf '%s' "$json" | jq -r '.results[0].userRatingCount')"
+
+          if [[ -z "${current_count}" || "${current_count}" == "null" ]]; then
+            echo "Failed to read userRatingCount from API." >&2
+            exit 1
+          fi
+
+          if [[ -f "${STATE_FILE}" ]]; then
+            prev_count="$(cat "${STATE_FILE}")"
+          else
+            prev_count="0"
+          fi
+
+          changed="false"
+          diff="0"
+
+          if (( current_count > prev_count )); then
+            changed="true"
+            diff=$(( current_count - prev_count ))
+            echo "${current_count}" > "${STATE_FILE}"
+          fi
+
+          {
+            echo "changed=${changed}"
+            echo "current_count=${current_count}"
+            echo "prev_count=${prev_count}"
+            echo "diff=${diff}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Commit updated state if changed
         if: steps.check.outputs.changed == 'true'
@@ -34,14 +70,14 @@ jobs:
           git commit -m "chore(state): update review_count to ${{ steps.check.outputs.current_count }}"
           git push
 
-      - name: Notify via GitHub Issue (opens a new one each time)
+      - name: Notify via GitHub Issue
         if: steps.check.outputs.changed == 'true'
         uses: actions/github-script@v7
         with:
           script: |
-            const diff = core.getInput('diff');
-            const current = core.getInput('current');
-            const prev = core.getInput('prev');
+            const diff = "${{ steps.check.outputs.diff }}";
+            const current = "${{ steps.check.outputs.current_count }}";
+            const prev = "${{ steps.check.outputs.prev_count }}";
             const title = `New App Store reviews: +${diff} (now ${current})`;
             const body = [
               `Steps (US store) total reviews increased from **${prev}** to **${current}** 🎉`,
@@ -54,13 +90,9 @@ jobs:
               repo: context.repo.repo,
               title,
               body
-            });
-          inputs: |
-            diff: ${{ steps.check.outputs.diff }}
-            current: ${{ steps.check.outputs.current_count }}
-            prev: ${{ steps.check.outputs.prev_count }}
+            })
 
-      # (Optional) Slack webhook notification
+      # Optional: Slack webhook notification (set repo secret SLACK_WEBHOOK_URL)
       - name: Notify Slack (optional)
         if: steps.check.outputs.changed == 'true' && env.SLACK_WEBHOOK_URL != ''
         env:
@@ -72,4 +104,3 @@ jobs:
                          --arg url "https://apps.apple.com/us/app/steps-simple-pedometer/id1602546738" \
                          '{text: ("Steps reviews +" + $diff + " (now " + $current + "; prev " + $prev + ")\n" + $url)}')
           curl -s -X POST -H 'Content-type: application/json' --data "$payload" "$SLACK_WEBHOOK_URL"
-
