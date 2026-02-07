@@ -16,16 +16,27 @@ xychart-beta
 
 ## Rate Statistics
 
-Reviews are **decelerating**: last 7d averaged **7.6/day** vs **9.4/day** prior 7d (-19.7%)
+Last 7d averaged **7.6/day** vs **8.1/day** prior 7d (-7.0%) — **not statistically significant** (z = -0.32)
 
-| Period | Reviews/day |
-|--------|-------------|
-| 7d | 7.6 |
-| 14d | 8.5 |
-| 30d | 8.0 |
-| all-time | 6.9 |
+Current 7d rate sits at the **60th percentile** of all daily rates (z = 0.53 vs all-time mean of 6.9/day)
 
-14-day trend: **8.5/day** vs **7.4/day** prior 14d (+14.4%)
+### Daily Rate Distribution
+
+| Period | Mean/day | Median/day | Std Dev | Min | Max | N days |
+|--------|----------|------------|---------|-----|-----|--------|
+| 7d | 7.6 | 9.0 | 3.0 | 4.0 | 12.0 | 7 |
+| 14d | 7.9 | 8.8 | 3.3 | 3.0 | 12.5 | 14 |
+| 30d | 8.0 | 8.5 | 3.1 | 2.0 | 13.0 | 30 |
+| all-time | 6.9 | 7.0 | 3.5 | 1.0 | 21.0 | 107 |
+
+### Acceleration Tests
+
+| Window | Recent avg | Prior avg | Change | Std Dev (R) | Std Dev (P) | z-score | Significant? |
+|--------|-----------|-----------|--------|-------------|-------------|---------|--------------|
+| 7d vs prior 7d | 7.6 | 8.1 | -7.0% | 3.0 | 3.6 | -0.32 | not significant |
+| 14d vs prior 14d | 7.9 | 8.1 | -2.7% | 3.3 | 3.1 | -0.18 | not significant |
+
+> **Reading the stats:** z-score measures how many standard errors the recent mean is from the prior mean. |z| > 1.96 → significant at 95% confidence (p < 0.05). High std dev relative to the mean suggests noisy data where apparent trends may just be normal variance.
 
 ## Weekly Breakdown
 
