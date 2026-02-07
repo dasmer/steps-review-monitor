@@ -44,13 +44,17 @@ def generate_mermaid_chart(eod):
     label_interval = max(1, n // 13)
 
     labels = []
+    hidden_counter = 0
     for i, d in enumerate(dates):
         dt = datetime.strptime(d, "%Y-%m-%d")
         formatted = dt.strftime("%m/%d")
         if i % label_interval == 0 or i == n - 1:
             labels.append(f'"{formatted}"')
         else:
-            labels.append('" "')
+            # Each hidden label must be unique or Mermaid collapses them
+            hidden_counter += 1
+            zwsp = "\u200b" * hidden_counter
+            labels.append(f'" {zwsp}"')
 
     y_min = (min(counts) // 100) * 100
     y_max = ((max(counts) // 100) + 1) * 100
