@@ -5,6 +5,10 @@ on:
     - cron: "0 6,18 * * *"
   workflow_dispatch: {}
 
+concurrency:
+  group: update-readme
+  cancel-in-progress: true
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -29,8 +33,13 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git diff --quiet README.md && exit 0
-          git add README.md
+
+          # Pull first: rebasing fails if we have staged/uncommitted changes.
           git pull --rebase
+
+          # No-op if README didn't change.
+          git diff --quiet README.md && exit 0
+
+          git add README.md
           git commit -m "docs: auto-update README with latest review stats"
           git push
